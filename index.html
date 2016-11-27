@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Rest Api</title>
+
+		<meta name="description" content="Building a Rest API using Flask and SQLAlchemy">
+		<meta name="author" content="Alessandro Cucci">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/moon.css" id="theme">
+
+		<!-- Code syntax highlighting - also available: visualstudio.css & zenburn.css -->
+		<link rel="stylesheet" href="lib/css/darcula.css">
+
+		<!-- Icons -->
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal moon">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<div class="accent">
+						<h1>Rest API</h1>
+						<h2>using Flask & SQLAlchemy</h2>
+					</div>
+					<small>Alessandro Cucci<br />Python Developer, Energee3</small>
+
+					<aside class="notes">
+						Hi, I'm a Speaker Note. You can open the Speaker View by hitting [S] on your keyboard.
+					</aside>
+				</section>
+
+				<section>
+						<h1>REST <h2 class="alt">guiding constraints</h2></h1>
+
+							<div id="left">
+								<h3>
+									<ul>
+										<li class="fragment fade-in">Client-Server</li>
+										<li class="fragment fade-in">Stateless</li>
+										<li class="fragment fade-in">Cacheable</li>
+										<li class="fragment fade-in">Layered system</li>
+										<li class="fragment fade-in">Code on demand (optional)</li>
+									</ul>
+								</h3>
+							</div>
+							<div id='right'>
+								<h6>
+									<ul>
+										<li class="fragment fade-in">Uniform interface
+												<ul>
+													<li><h6>Identification of resources</h6></li>
+													<li><h6>Manipulation of resources through representations</h6></li>
+													<li><h6>Self-descriptive messages</h6></li>
+													<li><h6>Hypermedia as the engine of application state</h6></li>
+												</ul>
+										</li>
+									</ul>
+								</h6>
+							</div>
+				</section>
+
+				<section>
+					<h2>Relationship between URL and HTTP methods</h2>
+					<div style="font-size: 60%; width:100%">
+					<table>
+					  <tr>
+					    <th colspan="2">URL</th>
+					    <th>GET</th>
+					    <th>PUT</th>
+						<th>POST</th>
+						<th>DELETE</th>
+					  </tr>
+					  <tr>
+					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
+					    <td>LIST of the collection albums</td>
+					    <td>Not generally used.</td>
+						<td>CREATE a new entry in the collection.</td>
+						<td>DELETE the entire collection.</td>
+					  </tr>
+					  <tr>
+						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+					    <td>RETRIEVE a representation of the addressed member of the collection</td>
+					    <td>REPLACE the addressed member of the collection.</td>
+						<td>Not generally used.</td>
+						<td>DELETE the addressed member of the collection.</td>
+					  </tr>
+					</table>
+				</div>
+				</section>
+
+				<section>
+					<h2>What do we not care for this evening</h2>
+					<ul class="fragment fade-in">
+						<li>Stability & Testing</li>
+						<li>Long-Term maintainability</li>
+						<li>Edge Cases</li>
+						<li>Operations & Deployment</li>
+					</ul>
+				</section>
+
+				<section data-background-image="assets/vinyls.png">
+					<h1 style="color: red">My Vinyl Collection API</h1>
+				</section>
+
+				<section>
+					<img src="assets/flask.png" />
+					<h3>http://flask.pocoo.org/</h3>
+				</section>
+
+				<section>
+					<h2>Hello API!</h2>
+					<pre><code data-trim contenteditable>
+from flask import Flask
+
+app = Flask(__name__)
+
+if __name__ == '__main__':
+  app.run()
+					</code></pre>
+					<pre class="fragment fade-in"><code data-trim contenteditable>
+$ python myvinylcollectionapi.py
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+
+ 					</code></pre>
+					<img class="fragment fade-in" src="assets/output/1.png" />
+				</section>
+
+				<section>
+					<h2>Hello API!</h2>
+					<pre><code data-trim contenteditable>
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    return "Hello PyRE!"
+
+if __name__ == '__main__':
+  app.run()
+					</code></pre>
+					<img class="fragment fade-in" src="assets/output/2.png" />
+				</section>
+
+				<section data-transition="convex">
+					<h2>Hello API!</h2>
+					<pre><code data-trim contenteditable>
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    return jsonify(data="Hello PyRE!")
+
+if __name__ == '__main__':
+  app.run()
+					</code></pre>
+					<img class="fragment fade-in" src="assets/output/3.png" />
+				</section>
+
+				<section>
+					<h1>HTTP GET Methods</h1>
+					<table class="fragment fade-in">
+					  <tr>
+					    <th colspan="2">URL</th>
+					    <th>GET</th>
+					  </tr>
+					  <tr>
+					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
+					    <td>LIST of the collection albums</td>
+					  </tr>
+					  <tr>
+						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+					    <td>RETRIEVE a representation of the addressed member of the collection</td>
+					  </tr>
+					</table>
+				</section>
+
+				<section>
+					<pre><code data-trim contenteditable>
+from flask import Flask, jsonify, abort
+
+app = Flask(__name__)
+
+RECORDS = [
+    {
+        'id': 0,
+        'artist': "Queen",
+        'title': "A Night At The Opera",
+        'year': "1975",
+        'label': "EMI"
+    },
+    {
+        'id': 1,
+        'artist': "Pink Floyd",
+        'title': "The Dark Side Of The Moon",
+        'year': "1989",
+        'label': "EMI"
+    },
+		...
+]
+					</code></pre>
+				</section>
+
+				<section>
+					<pre><code>
+@app.route("/")
+def get_records():
+    return jsonify(RECORDS)
+    )
+
+@app.route("/&lt;int:index&gt;")
+def get_record(index):
+    try:
+        record = RECORDS[index]
+    except IndexError:
+        abort(404)
+    return jsonify(record)
+
+if __name__ == '__main__':
+  app.run()
+					</pre></code>
+				</section>
+
+				<section>
+					<h2>HTTP GET Method</h2>
+					<pre><code data-trim contenteditable>
+$ curl -X GET localhost:5000/
+[
+    {
+      "artist": "Queen",
+      "id": 0,
+      "label": "EMI",
+      "title": "A Night At The Opera",
+      "year": "1975"
+    },
+    {
+      "artist": "Pink Floyd",
+      "id": 1,
+      "label": "EMI",
+      "title": "The Dark Side Of The Moon",
+      "year": "1989"
+    }
+]
+					</code></pre>
+				</section>
+				<section>
+					HTTP GET Method
+					<pre><code data-trim contenteditable>
+$ curl -X GET localhost:5000/1
+{
+  "artist": "Pink Floyd",
+  "id": 1,
+  "label": "EMI",
+  "title": "The Dark Side Of The Moon",
+  "year": "1989"
+}
+					</code></pre>
+					<pre class="fragment fade-in"><code>
+$ curl -X GET localhost:5000/5
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server.
+	If you entered the URL	manually please check
+	your spelling and try again.</p>
+					</code></pre>
+				</section>
+
+				<section>
+					<h2>Jsonify that error!</h2>
+					<pre><code data-trim contenteditable>
+@app.errorhandler(404)
+def page_not_found(error):
+    return jsonify(
+        error="Not Found",
+        status_code=404
+    )
+					</code></pre>
+					<pre class="fragment fade-in"><code data-trim contenteditable>
+$ curl -X GET localhost:5000/5
+{
+  "error": "Not Found",
+  "status_code": 404
+}
+					</code></pre>
+				</section>
+
+				<section>
+					<div>
+						<h1>Good News:</h1>
+						<h2 style="color: green">It Works!</h2>
+					</div>
+					<div class="fragment fade-in">
+						<h1>Bad News:</h1>
+						<h2 style="color: red">Static Data</h2>
+					</div>
+				</section>
+
+				<section>
+					<h3>Separation of concerns</h3>
+					<img src="assets/separation.png" />
+				</section>
+
+				<section>
+					<h2>
+						<span>Discogs.com </span>
+						<span class="fragment fade-in">+ Pandas </span>
+						<span class="fragment fade-in">+ Sqlite</span>
+					</h2>
+				</section>
+
+				<section>
+					<h2>CSV Collection Export</h2>
+					<img src="assets/discogs.png" />
+				</section>
+
+				<section>
+					<pre><code data-trim contenteditable>
+import pandas
+import sqlite3
+
+conn = sqlite3.connect('record_collection.db')
+conn.text_factory = sqlite3.Binary
+df = pandas.read_csv('collection.csv')
+df.to_sql('collection', conn)
+					</code></pre>
+				</section>
+
+				<section>
+					<img src="assets/sqlite.png" />
+				</section>
+
+				<section>
+					<h2>Object Relational Mapper (ORM)</h2>
+					<img class="fragment fade-in" src="assets/sqlalchemy.png" />
+					<h3 class="fragment fade-in">http://docs.sqlalchemy.org</h3>
+				</section>
+
+				<section>
+					<h2>model.py</h2>
+					<pre><code>
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
+
+
+class Record(db.Model):
+    __tablename__ = "collection"
+
+    index = db.Column(db.Integer, primary_key=True)
+    Artist = db.Column(db.Text, nullable=False)
+    Title = db.Column(db.Text, nullable=False)
+    Label = db.Column(db.Text)
+    Released = db.Column(db.Text)
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Query</h3>
+					<pre class="fragment fade-in"><code>
+# .all() return a list
+all_records = Record.query.all()
+len(all_records) == 80
+					</code></pre>
+					<pre class="fragment fade-in"><code>
+# .first() return the first item that matches
+record = Record.query.filter(Record.index == 9).first()
+record.Title == "Back In Black"
+record.Artist == "AC/DC"
+record.Released == "1980"
+					</code></pre>
+					<pre class="fragment fade-in"><code>
+# .filter_by() is a shortcut
+record = Record.query.filter_by(index == 6).first()
+record.Title == "Hotel California"
+record.Artist == "Eagles"
+					</code></pre>
+					<pre class="fragment fade-in"><code>
+# .first() returns None if no matches
+record = Record.query.filter_by(index == 666).first()
+record is None
+					</code></pre>
+				</section>
+
+				<section>
+					<pre><code>
+from flask import Flask, jsonify
+from model import db, Record
+
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///record_collection.db"
+db.init_app(app)
+
+@app.route("/")
+def get_records():
+    records = Record.query.all()
+    return jsonify([
+        {
+            'index': r.index,
+            'artist': r.Artist,
+            'title': r.Title
+        } for r in records]
+    )
+
+@app.route("/&lt;int:index&gt;")
+def get_record(index):
+    record = Record.query.filter(Record.index == index).first_or_404()
+    return jsonify(
+        index=record.index,
+        artist=record.Artist,
+        title=record.Title
+    )
+					</code></pre>
+				</section>
+
+				<section>
+					<pre><code>
+$ curl -X GET localhost:5000/
+[
+  {
+    "artist": "The Police",
+    "index": 0,
+    "title": "Reggatta De Blanc"
+  },
+  {
+    "artist": "The Beatles",
+    "index": 1,
+    "title": "Abbey Road"
+  },
+						...
+]
+					</code></pre>
+					<pre><code>
+$ curl -X GET localhost:5000/1
+{
+  "artist": "The Beatles",
+  "index": 1,
+  "title": "Abbey Road"
+}
+					</code></pre>
+				</section>
+
+				<section>
+					<img src="assets/flask-marshmallow.png" />
+					<h3>https://flask-marshmallow.readthedocs.io/</h3>
+				</section>
+
+				<section>
+					<h3>Separation of concerns</h3>
+					<img src="assets/separation2.png" />
+				</section>
+
+				<section>
+					<h2>Marshmallow</h2>
+					<h3>ORM/ODM/framework-agnostic library for converting complex datatypes, such as objects, to and from native Python datatypes</h3>
+				</section>
+
+				<section>
+					<h3>schema.py</h3>
+					<pre><code>
+from flask_marshmallow import Marshmallow
+from model import Record
+
+ma = Marshmallow()
+
+
+class RecordSchema(ma.ModelSchema):
+    class Meta:
+        model = Record
+
+record_schema = RecordSchema()
+records_schema = RecordSchema(many=True)
+					</code></pre>
+				</section>
+
+				<section>
+					<pre><code>
+from flask import Flask, jsonify
+from model import db, Record
+from schema import ma, record_schema, records_schema
+
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///record_collection"
+db.init_app(app)
+ma.init_app(app)
+
+
+@app.route("/")
+def get_records():
+    records = Record.query.all()
+    return records_schema.jsonify(records)
+
+@app.route("/&lt;int:index&gt;")
+def get_record(index):
+    record = Record.query.filter(Record.index == index).first_or_404()
+    return record_schema.jsonify(record)
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return jsonify(
+        error="Not Found",
+        status_code=404
+    )
+					</code></pre>
+				</section>
+
+				<section>
+					<pre><code>
+$ curl -X GET localhost:5000/
+[
+  {
+    "Artist": "The Police",
+    "Index": 0,
+    "Title": "Reggatta De Blanc",
+    "Released": "1979",
+    "Label": "A&M Records"
+  },
+  {
+    "artist": "The Beatles",
+    "index": 1,
+    "title": "Abbey Road",
+    "Released": "1969",
+    "Label": "Apple Records, Apple Records"
+  },
+]
+					</code></pre>
+					<pre><code>
+$ curl -X GET localhost:5000/24
+{
+  "Artist": "AC/DC",
+  "Label": "Columbia, Sony Music, Albert Productions",
+  "Released": "2003",
+  "Title": "For Those About To Rock (We Salute You)",
+  "index": 24
+}
+					</code></pre>
+				</section>
+
+				<section>
+					<h1>HTTP POST Methods</h1>
+					<table class="fragment fade-in">
+					  <tr>
+					    <th colspan="2">URL</th>
+						<th>POST</th>
+					  </tr>
+					  <tr>
+					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
+						<td>CREATE a new entry in the collection.</td>
+					  </tr>
+					  <tr>
+						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+						<td>Not generally used.</td>
+					  </tr>
+					</table>
+				</section>
+
+				<section>
+					<h3>Post on localhost:5000/some_id</h3>
+					<pre><code>
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return jsonify(
+        error="Method Not Allowed",
+        status_code=405
+    )
+					</code></pre>
+					<pre class="fragment fade-in"><code>
+from flask import Flask, jsonify, abort, request
+
+						...
+
+@app.route("/&lt;int:index&gt;", methods=['GET', 'POST'])
+def get_record(index):
+    if request.method == 'POST':
+        abort(405)
+    record = Record.query.filter(Record.index == index).first_or_404()
+    return record_schema.jsonify(record)
+					</code></pre>
+				</section>
+
+				<section>
+					<pre><code>
+$ curl -X POST localhost:5000/1
+{
+  "error": "Method Not Allowed",
+  "status_code": 405
+}
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>Insert into database</h3>
+					<pre class="fragment fade-in"><code>
+# .add() insert a record
+db.session.add(record)
+					</code></pre>
+					<pre class="fragment fade-in"><code>
+# changes won't be saved until committed!
+db.session.commit()
+					</code></pre>
+				</section>
+
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+		<script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+		<script src="js/restapi.js"></script>
+	</body>
+</html>
