@@ -16,6 +16,7 @@
 
 		<link rel="stylesheet" href="css/reveal.css">
 		<link rel="stylesheet" href="css/theme/moon.css" id="theme">
+        <link rel="stylesheet" href="plugin/fullscreen/fullscreen.css">
 
 		<!-- Code syntax highlighting - also available: visualstudio.css & zenburn.css -->
 		<link rel="stylesheet" href="lib/css/darcula.css">
@@ -105,7 +106,7 @@
 					  <tr>
 					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
 					    <td>LIST of the collection albums</td>
-					    <td>Not generally used.</td>
+					    <td>Method not allowed.</td>
 						<td>CREATE a new entry in the collection.</td>
 						<td>DELETE the entire collection.</td>
 					  </tr>
@@ -113,7 +114,7 @@
 						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
 					    <td>RETRIEVE a representation of the addressed member of the collection</td>
 					    <td>REPLACE the addressed member of the collection.</td>
-						<td>Not generally used.</td>
+						<td>Method not allowed.</td>
 						<td>DELETE the addressed member of the collection.</td>
 					  </tr>
 					</table>
@@ -252,7 +253,7 @@ def get_record(index):
 
 if __name__ == '__main__':
   app.run()
-					</pre></code>
+					</code></pre>
 				</section>
 
 				<section>
@@ -308,7 +309,7 @@ def page_not_found(error):
     return jsonify(
         error="Not Found",
         status_code=404
-    )
+    ), 405
 					</code></pre>
 					<pre class="fragment fade-in"><code data-trim contenteditable>
 $ curl -X GET localhost:5000/5
@@ -337,10 +338,31 @@ $ curl -X GET localhost:5000/5
 
 				<section>
 					<h2>
-						<span>Discogs.com </span>
-						<span class="fragment fade-in">+ Pandas </span>
-						<span class="fragment fade-in">+ Sqlite</span>
+						<span>Sqlite </span>
+						<span class="fragment fade-in">+ Discogs.com </span>
+						<span class="fragment fade-in">+ Pandas</span>
 					</h2>
+				</section>
+
+				<section>
+					<pre><code>
+CREATE TABLE "collection" (
+	`index`	                        INTEGER PRIMARY KEY AUTOINCREMENT,
+	`Catalog#`                      TEXT,
+	`Artist`                        TEXT,
+	`Title`	                        TEXT,
+	`Label`	                        TEXT,
+	`Format`                        TEXT,
+	`Rating`                        REAL,
+	`Released`                      INTEGER,
+	`release_id`	                INTEGER,
+	`CollectionFolder`              TEXT,
+	`Date Added`	                TEXT,
+	`Collection Media Condition`    TEXT,
+	`Collection Sleeve Condition`   TEXT,
+	`Collection Notes`              REAL
+)
+					</code></pre>
 				</section>
 
 				<section>
@@ -374,6 +396,7 @@ df.to_sql('collection', conn)
 					<h2>model.py</h2>
 					<pre><code>
 from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import orm
 
 db = SQLAlchemy()
 
@@ -386,6 +409,13 @@ class Record(db.Model):
     Title = db.Column(db.Text, nullable=False)
     Label = db.Column(db.Text)
     Released = db.Column(db.Text)
+
+    def as_dict(self):
+        columns = orm.class_mapper(self.__class__).mapped_table.c
+        return {
+            col.name: getattr(self, col.name)
+                for col in columns
+        }
 					</code></pre>
 				</section>
 
@@ -427,23 +457,13 @@ db.init_app(app)
 
 @app.route("/")
 def get_records():
-    records = Record.query.all()
-    return jsonify([
-        {
-            'index': r.index,
-            'artist': r.Artist,
-            'title': r.Title
-        } for r in records]
-    )
+    records = [r.as_dict() for r in Record.query.all()]
+    return jsonify(records)
 
 @app.route("/&lt;int:index&gt;")
 def get_record(index):
     record = Record.query.filter(Record.index == index).first_or_404()
-    return jsonify(
-        index=record.index,
-        artist=record.Artist,
-        title=record.Title
-    )
+    return jsonify(record.as_dict())
 					</code></pre>
 				</section>
 
@@ -452,14 +472,14 @@ def get_record(index):
 $ curl -X GET localhost:5000/
 [
   {
-    "artist": "The Police",
+    "Artist": "The Police",
     "index": 0,
-    "title": "Reggatta De Blanc"
+    "Title": "Reggatta De Blanc"
   },
   {
-    "artist": "The Beatles",
+    "Artist": "The Beatles",
     "index": 1,
-    "title": "Abbey Road"
+    "Title": "Abbey Road"
   },
 						...
 ]
@@ -467,9 +487,9 @@ $ curl -X GET localhost:5000/
 					<pre><code>
 $ curl -X GET localhost:5000/1
 {
-  "artist": "The Beatles",
+  "Artist": "The Beatles",
   "index": 1,
-  "title": "Abbey Road"
+  "Title": "Abbey Road"
 }
 					</code></pre>
 				</section>
@@ -487,7 +507,7 @@ $ curl -X GET localhost:5000/1
 					  </tr>
 					  <tr>
 						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
-						<td>Not generally used.</td>
+						<td>Method not allowed.</td>
 					  </tr>
 					</table>
 				</section>
@@ -500,7 +520,7 @@ def method_not_allowed(error):
     return jsonify(
         error="Method Not Allowed",
         status_code=405
-    )
+    ), 405
 					</code></pre>
 					<pre class="fragment fade-in"><code>
 from flask import Flask, jsonify, abort, request
@@ -512,7 +532,7 @@ def get_record(index):
     if request.method == 'POST':
         abort(405)
     record = Record.query.filter(Record.index == index).first_or_404()
-    return record_schema.jsonify(record)
+    return jsonify(record.as_dict())
 					</code></pre>
 				</section>
 
@@ -538,7 +558,372 @@ db.session.commit()
 					</code></pre>
 				</section>
 
+				<section>
+					<h2>Adding a record to my collection</h2>
+					<pre><code>
+@app.route("/", methods=['GET', 'POST'])
+def get_records():
+    if request.method == 'POST':
+        record = Record(**json.loads(request.data))
+        db.session.add(record)
+        db.session.commit()
+        return jsonify(record.as_dict()), 201
+    records = [r.as_dict() for r in Record.query.all()]
+    return records_schema.jsonify(records)
+					</code></pre>
+				</section>
 
+				<section>
+					<h2>Adding a record to my collection</h2>
+					<pre><code>
+$ curl -i -H "Content-Type: application/json" -X POST localhost:5000/ \
+> -d '{"Artist":"Neil Joung", "Title":"Harvest", \
+> "Label":"Reprise Records", "Released":"1977"}'
+
+HTTP/1.0 201 CREATED
+Content-Type: application/json
+Content-Length: 104
+Server: Werkzeug/0.11.11 Python/2.7.12+
+Date: Sat, 03 Dec 2016 11:03:10 GMT
+
+{
+    "Artist": "Neil Young",
+    "Label": "Reprise Records",
+    "Released": "1977",
+    "Title": "American Stars 'N Bars",
+    "index": 91
+}
+					</code></pre>
+				</section>
+
+                <section>
+					<h1>HTTP PUT methods</h1>
+					<table class="fragment fade-in">
+					  <tr>
+					    <th colspan="2">URL</th>
+					    <th>PUT</th>
+					  </tr>
+					  <tr>
+					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
+					    <td>Method not allowed.</td>
+					  </tr>
+					  <tr>
+						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+					    <td>REPLACE the addressed member of the collection.</td>
+					  </tr>
+					</table>
+				</section>
+
+                <section>
+                    <pre><code>
+@app.route("/", methods=['GET', 'POST', 'PUT'])
+def get_records():
+    if request.method == 'POST':
+        record = Record(**json.loads(request.data))
+        db.session.add(record)
+        db.session.commit()
+        return jsonify(record.as_dict()), 201
+    elif request.method == 'PUT':
+        abort(405)
+    records = [r.as_dict() for r in Record.query.all()]
+    return jsonify(records), 200
+
+@app.route("/&lt;int:index&gt;", methods=['GET', 'POST', 'PUT'])
+def get_record(index):
+    if request.method == 'POST':
+        abort(405)
+    else:
+        record = Record.query.filter(Record.index == index).first_or_404()
+        if request.method == 'PUT':
+            for k, v in json.loads(request.data).iteritems():
+                setattr(record, k, v)
+            db.session.add(record)
+            db.session.commit()
+        return jsonify(record.as_dict()), 200
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>PUT on Collection</h2>
+                    <pre><code>
+$ curl -i -H "Content-Type: application/json" -X POST localhost:5000/ \
+> -d '{"Artist":"Neil Joung", "Title":"Harvest", \
+> "Label":"Reprise Records", "Released":"1977"}'
+
+HTTP/1.0 405 METHOD NOT ALLOWED
+Content-Type: application/json
+Content-Length: 59
+Server: Werkzeug/0.11.11 Python/2.7.12+
+Date: Sat, 03 Dec 2016 10:20:06 GMT
+
+{
+  "error": "Method Not Allowed",
+  "status_code": 405
+}
+                    </code></pre>
+                </section>
+                <section>
+                    <h2>PUT on Resource</h2>
+                    <pre><code>
+$ curl -i -H "Content-Type: application/json" -X PUT localhost:5000/91 \
+> -d '{"Artist":"Neil Joung", "Title":"Harvest", \
+> "Label":"Reprise Records", "Released":"1977"}'
+
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 104
+Server: Werkzeug/0.11.11 Python/2.7.12+
+Date: Sat, 03 Dec 2016 11:07:22 GMT
+
+{
+    "Artist": "Neil Young",
+    "Label": "Reprise Records",
+    "Released": "1977",
+    "Title": "American Stars 'N Bars",
+    "index": 91
+}
+                    </code></pre>
+                </section>
+
+                <section>
+					<h1>HTTP DELETE methods</h1>
+					<table class="fragment fade-in">
+					  <tr>
+					    <th colspan="2">URL</th>
+					    <th>DELETE</th>
+					  </tr>
+					  <tr>
+					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
+					    <td>DELETE the entire collection.</td>
+					  </tr>
+					  <tr>
+						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+					    <td>DELETE the addressed member of the collection.</td>
+					  </tr>
+					</table>
+				</section>
+
+                <section>
+                    <h2>DELETE on Collection</h2>
+                    <pre><code>
+@app.route("/", methods=['GET', 'POST', 'PUT', 'DELETE'])
+def get_records():
+    if request.method == 'POST':
+        record = Record(**json.loads(request.data))
+        db.session.add(record)
+        db.session.commit()
+        return jsonify(record.as_dict()), 201
+    elif request.method == 'PUT':
+        abort(405)
+    records = [r.as_dict() for r in Record.query.all()]
+    if request.method == 'DELETE':
+        for r in records:
+            db.session.delete(r)
+        db.session.commit()
+        records = [r.as_dict() for r in Record.query.all()]
+    return jsonify(records), 200
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>DELETE on Resource</h2>
+                    <pre><code>
+@app.route("/&lt;int:index&gt;", methods=['GET', 'POST', 'PUT', 'DELETE'])
+def get_record(index):
+    if request.method == 'POST':
+        abort(405)
+    else:
+        record = Record.query.filter(Record.index == index).first_or_404()
+        if request.method == 'PUT':
+            for k, v in json.loads(request.data).iteritems():
+                setattr(record, k, v)
+            db.session.add(record)
+            db.session.commit()
+        return jsonify(record.as_dict()), 200
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>DELETE on Resource</h2>
+                    <pre><code>
+$ curl -i -H "Content-Type: application/json" -X DELETE localhost:5000/91
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 104
+Server: Werkzeug/0.11.11 Python/2.7.12+
+Date: Sat, 03 Dec 2016 10:40:00 GMT
+
+{
+    "Artist": "Neil Young",
+    "Label": "Reprise Records",
+    "Released": "1977",
+    "Title": "American Stars 'N Bars",
+    "index": 91
+}
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>DELETE on Resource</h2>
+                    <pre><code>
+$ curl -i -H "Content-Type: application/json" -X DELETE localhost:5000/91
+HTTP/1.0 HTTP/1.0 404 NOT FOUND
+Content-Type: application/json
+Content-Length: 50
+Server: Werkzeug/0.11.11 Python/2.7.12+
+Date: Sat, 03 Dec 2016 10:40:09 GMT
+
+{
+  "error": "Not Found",
+  "status_code": 404
+}
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>DELETE on Collection</h2>
+                    <pre><code>
+$ curl -i -H "Content-Type: application/json" -X DELETE localhost:5000/
+                    </code></pre>
+                </section>
+
+                <section fullscreen-img="assets/atomic.jpg">
+                </section>
+
+                <section>
+                    <h1>Flask-Login</h1>
+                    <h4>https://github.com/miguelgrinberg/flask-httpauth</h4>
+                    <img src="assets/gandalf.jpg"  style="width: 70%"/>
+                </section>
+
+                <section>
+                    <h2>Username & Pwd authentication</h2>
+                    <pre><code>
+from flask import Flask, jsonify, abort
+from flask_login import LoginManager, current_user
+
+login_manager = LoginManager()
+app = Flask(__name__)
+login_manager.init_app(app)
+
+@login_manager.request_loader
+def check_token(request):
+    token = request.headers.get('Authorization')
+    if token == 'L3T_M3_PA55!':
+        return "ADMIN"
+    return None
+
+@app.route("/")
+def get_records():
+    if current_user:
+        return jsonify(data='Hello Login'), 200
+    else:
+        abort(401)
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>How it works</h2>
+                    <pre><code>
+$ curl -i localhost:5000
+HTTP/1.0 401 UNAUTHORIZED
+Content-Type: application/json
+WWW-Authenticate: Basic realm="Authentication Required"
+Content-Length: 37
+Server: Werkzeug/0.11.11 Python/2.7.12+
+Date: Sat, 03 Dec 2016 14:46:55 GMT
+
+{
+  "error": "Unauthorized access"
+}
+                    </code></pre>
+                    <pre class="fragment fade-in"><code>
+$ curl -i -H "Authorization: L3T_M3_PA55!" localhost:5000
+HTTP/1.0 200 OK
+Content-Type: application/json
+Content-Length: 28
+Server: Werkzeug/0.11.11 Python/2.7.12+
+Date: Sat, 03 Dec 2016 14:42:00 GMT
+
+{
+  "data": "Hello Login"
+}
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>Securing our API - Resource</h2>
+                    <pre><code>
+@app.route("/&lt;int:index&gt;", methods=['GET', 'POST', 'PUT', 'DELETE'])
+def get_record(index):
+    if request.method == 'POST':
+        abort(405)
+    else:
+        record = Record.query.filter(Record.index == index).first_or_404()
+        if request.method == 'PUT':
+            if current_user:
+                for k, v in json.loads(request.data).iteritems():
+                    setattr(record, k, v)
+                db.session.add(record)
+                db.session.commit()
+            else:
+                abort(401)
+        elif request.method == 'DELETE':
+             if current_user:
+                db.session.delete(record)
+                db.session.commit()
+                return jsonify(record), 200
+             else:
+                 abort(401)
+        return jsonify(record.as_dict()), 200
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>Securing our API - Collection</h2>
+                    <pre><code>
+@app.route("/", methods=['GET', 'POST', 'PUT', 'DELETE'])
+def get_records():
+    if request.method == 'POST':
+        record = Record(**json.loads(request.data))
+        db.session.add(record)
+        db.session.commit()
+        return jsonify(record.as_dict()), 201
+    elif request.method == 'PUT':
+        abort(405)
+    records = [r.as_dict() for r in Record.query.all()]
+    if request.method == 'DELETE':
+        if current_user:
+            for r in records:
+                db.session.delete(r)
+            db.session.commit()
+            records = [r.as_dict() for r in Record.query.all()]
+            return jsonify(records), 200
+        else:
+            abort(401)
+    return jsonify(records), 200
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>Homeworks</h2>
+                    <ul>
+                        <li>Pagination with Flask-SqlAlchemy</li>
+                        <li>Rate Limiting with Flask-Limiter</li>
+                        <li>Cache with Flask-Cache</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h1>THANK YOU!</h1>
+                    <br />
+                    <pre><code>
+{
+    'slides': 'www.alessandrocucci.it/pyre/restapi',
+    'code': 'https://goo.gl/4UOqEr'
+}
+                    </code></pre>
+                </section>
 			</div>
 
 		</div>

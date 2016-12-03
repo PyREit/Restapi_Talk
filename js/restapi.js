@@ -14,6 +14,8 @@ Reveal.initialize({
             return !document.body.classList;
         }
     }, {
+        src: 'plugin/fullscreen/fullscreen.js'
+    }, {
         src: 'plugin/markdown/marked.js',
         condition: function () {
             return !!document.querySelector('[data-markdown]');
