@@ -436,27 +436,26 @@ class Record(db.Model):
 				<section>
 					<h3>Query</h3>
 					<pre class="fragment fade-in"><code>
-# .all() return a list
-all_records = Record.query.all()
-len(all_records) == 80
+>>> # .all() return a list
+>>> all_records = Record.query.all()
+>>> len(all_records)
+80
 					</code></pre>
 					<pre class="fragment fade-in"><code>
-# .first() return the first item that matches
-record = Record.query.filter(Record.index == 9).first()
-record.Title == "Back In Black"
-record.Artist == "AC/DC"
-record.Released == "1980"
+>>> # .first() return the first item that matches
+>>> record = Record.query.filter(Record.index == 9).first()
+>>> record.Title
+"Back In Black"
+>>> record.Artist
+"AC/DC"
+>>> record.Released
+"1980"
 					</code></pre>
 					<pre class="fragment fade-in"><code>
-# .filter_by() is a shortcut
-record = Record.query.filter_by(index == 6).first()
-record.Title == "Hotel California"
-record.Artist == "Eagles"
-					</code></pre>
-					<pre class="fragment fade-in"><code>
-# .first() returns None if no matches
-record = Record.query.filter_by(index == 666).first()
-record is None
+>>> # .filter_by() is a shortcut
+>>> record = Record.query.filter_by(index == 6).first()
+>>> record.Title
+"Hotel California"
 					</code></pre>
 				</section>
 
@@ -563,12 +562,12 @@ $ curl -X POST localhost:5000/1
 				<section>
 					<h3>Insert into database</h3>
 					<pre class="fragment fade-in"><code>
-# .add() insert a record
-db.session.add(record)
+>>> # .add() insert a record
+>>> db.session.add(record)
 					</code></pre>
 					<pre class="fragment fade-in"><code>
-# changes won't be saved until committed!
-db.session.commit()
+>>> # changes won't be saved until committed!
+>>> db.session.commit()
 					</code></pre>
 				</section>
 
