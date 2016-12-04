@@ -118,14 +118,14 @@
 						<th>DELETE</th>
 					  </tr>
 					  <tr>
-					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
-					    <td>LIST of the collection albums</td>
+					    <td colspan="2">http://api.myvinylcollection.com/records/</td>
+					    <td>LIST of records in collection</td>
 					    <td>Method not allowed.</td>
 						<td>CREATE a new entry in the collection.</td>
 						<td>DELETE the entire collection.</td>
 					  </tr>
 					  <tr>
-						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+						<td colspan="2">http://api.myvinylcollection.com/records/1</td>
 					    <td>RETRIEVE a representation of the addressed member of the collection</td>
 					    <td>REPLACE the addressed member of the collection.</td>
 						<td>Method not allowed.</td>
@@ -214,11 +214,11 @@ if __name__ == '__main__':
 					    <th>GET</th>
 					  </tr>
 					  <tr>
-					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
-					    <td>LIST of the collection albums</td>
+					    <td colspan="2">http://api.myvinylcollection.com/records</td>
+					    <td>LIST of records in collection</td>
 					  </tr>
 					  <tr>
-						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+						<td colspan="2">http://api.myvinylcollection.com/records/1</td>
 					    <td>RETRIEVE a representation of the addressed member of the collection</td>
 					  </tr>
 					</table>
@@ -252,12 +252,11 @@ RECORDS = [
 
 				<section>
 					<pre><code>
-@app.route("/")
+@app.route("/records")
 def get_records():
     return jsonify(RECORDS)
-    )
 
-@app.route("/&lt;int:index&gt;")
+@app.route("/records/&lt;int:index&gt;")
 def get_record(index):
     try:
         record = RECORDS[index]
@@ -273,7 +272,7 @@ if __name__ == '__main__':
 				<section>
 					<h2>HTTP GET Method</h2>
 					<pre><code data-trim contenteditable>
-$ curl -X GET localhost:5000/
+$ curl -X GET localhost:5000/records
 [
     {
       "artist": "Queen",
@@ -295,7 +294,7 @@ $ curl -X GET localhost:5000/
 				<section>
 					HTTP GET Method
 					<pre><code data-trim contenteditable>
-$ curl -X GET localhost:5000/1
+$ curl -X GET localhost:5000/records/1
 {
   "artist": "Pink Floyd",
   "id": 1,
@@ -305,7 +304,7 @@ $ curl -X GET localhost:5000/1
 }
 					</code></pre>
 					<pre class="fragment fade-in"><code>
-$ curl -X GET localhost:5000/5
+$ curl -X GET localhost:5000/records/5
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <title>404 Not Found</title>
 <h1>Not Found</h1>
@@ -326,7 +325,7 @@ def page_not_found(error):
     ), 405
 					</code></pre>
 					<pre class="fragment fade-in"><code data-trim contenteditable>
-$ curl -X GET localhost:5000/5
+$ curl -X GET localhost:5000/records/5
 {
   "error": "Not Found",
   "status_code": 404
@@ -468,12 +467,12 @@ app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///record_collection.db"
 db.init_app(app)
 
-@app.route("/")
+@app.route("/records")
 def get_records():
     records = [r.as_dict() for r in Record.query.all()]
     return jsonify(records)
 
-@app.route("/&lt;int:index&gt;")
+@app.route("/records/&lt;int:index&gt;")
 def get_record(index):
     record = Record.query.filter(Record.index == index).first_or_404()
     return jsonify(record.as_dict())
@@ -482,7 +481,7 @@ def get_record(index):
 
 				<section>
 					<pre><code>
-$ curl -X GET localhost:5000/
+$ curl -X GET localhost:5000/records
 [
   {
     "Artist": "The Police",
@@ -498,7 +497,7 @@ $ curl -X GET localhost:5000/
 ]
 					</code></pre>
 					<pre><code>
-$ curl -X GET localhost:5000/1
+$ curl -X GET localhost:5000/records/1
 {
   "Artist": "The Beatles",
   "index": 1,
@@ -515,18 +514,18 @@ $ curl -X GET localhost:5000/1
 						<th>POST</th>
 					  </tr>
 					  <tr>
-					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
+					    <td colspan="2">http://api.myvinylcollection.com/records/</td>
 						<td>CREATE a new entry in the collection.</td>
 					  </tr>
 					  <tr>
-						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+						<td colspan="2">http://api.myvinylcollection.com/records/1</td>
 						<td>Method not allowed.</td>
 					  </tr>
 					</table>
 				</section>
 
 				<section>
-					<h3>Post on localhost:5000/some_id</h3>
+					<h3>Post on localhost:5000/records/id</h3>
 					<pre><code>
 @app.errorhandler(405)
 def method_not_allowed(error):
@@ -540,7 +539,7 @@ from flask import Flask, jsonify, abort, request
 
 						...
 
-@app.route("/&lt;int:index&gt;", methods=['GET', 'POST'])
+@app.route("/records/&lt;int:index&gt;", methods=['GET', 'POST'])
 def get_record(index):
     if request.method == 'POST':
         abort(405)
@@ -551,7 +550,7 @@ def get_record(index):
 
 				<section>
 					<pre><code>
-$ curl -X POST localhost:5000/1
+$ curl -X POST localhost:5000/records/1
 {
   "error": "Method Not Allowed",
   "status_code": 405
@@ -574,7 +573,7 @@ $ curl -X POST localhost:5000/1
 				<section>
 					<h2>Adding a record to my collection</h2>
 					<pre><code>
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/records", methods=['GET', 'POST'])
 def get_records():
     if request.method == 'POST':
         record = Record(**json.loads(request.data))
@@ -582,14 +581,14 @@ def get_records():
         db.session.commit()
         return jsonify(record.as_dict()), 201
     records = [r.as_dict() for r in Record.query.all()]
-    return records_schema.jsonify(records)
+    return jsonify(records)
 					</code></pre>
 				</section>
 
 				<section>
 					<h2>Adding a record to my collection</h2>
 					<pre><code>
-$ curl -i -H "Content-Type: application/json" -X POST localhost:5000/ \
+$ curl -i -H "Content-Type: application/json" -X POST localhost:5000/records \
 > -d '{"Artist":"Neil Joung", "Title":"Harvest", \
 > "Label":"Reprise Records", "Released":"1977"}'
 
@@ -617,11 +616,11 @@ Date: Sat, 03 Dec 2016 11:03:10 GMT
 					    <th>PUT</th>
 					  </tr>
 					  <tr>
-					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
+					    <td colspan="2">http://api.myvinylcollection.com/records/</td>
 					    <td>Method not allowed.</td>
 					  </tr>
 					  <tr>
-						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+						<td colspan="2">http://api.myvinylcollection.com/records/1</td>
 					    <td>REPLACE the addressed member of the collection.</td>
 					  </tr>
 					</table>
@@ -629,7 +628,7 @@ Date: Sat, 03 Dec 2016 11:03:10 GMT
 
                 <section>
                     <pre><code>
-@app.route("/", methods=['GET', 'POST', 'PUT'])
+@app.route("/records", methods=['GET', 'POST', 'PUT'])
 def get_records():
     if request.method == 'POST':
         record = Record(**json.loads(request.data))
@@ -641,7 +640,7 @@ def get_records():
     records = [r.as_dict() for r in Record.query.all()]
     return jsonify(records), 200
 
-@app.route("/&lt;int:index&gt;", methods=['GET', 'POST', 'PUT'])
+@app.route("/records/&lt;int:index&gt;", methods=['GET', 'POST', 'PUT'])
 def get_record(index):
     if request.method == 'POST':
         abort(405)
@@ -659,7 +658,8 @@ def get_record(index):
                 <section>
                     <h2>PUT on Collection</h2>
                     <pre><code>
-$ curl -i -H "Content-Type: application/json" -X POST localhost:5000/ \
+$ curl -i -H "Content-Type: application/json" \
+> -X POST localhost:5000/records \
 > -d '{"Artist":"Neil Joung", "Title":"Harvest", \
 > "Label":"Reprise Records", "Released":"1977"}'
 
@@ -678,7 +678,8 @@ Date: Sat, 03 Dec 2016 10:20:06 GMT
                 <section>
                     <h2>PUT on Resource</h2>
                     <pre><code>
-$ curl -i -H "Content-Type: application/json" -X PUT localhost:5000/91 \
+$ curl -i -H "Content-Type: application/json" \
+> -X PUT localhost:5000/records/91 \
 > -d '{"Artist":"Neil Joung", "Title":"Harvest", \
 > "Label":"Reprise Records", "Released":"1977"}'
 
@@ -706,11 +707,11 @@ Date: Sat, 03 Dec 2016 11:07:22 GMT
 					    <th>DELETE</th>
 					  </tr>
 					  <tr>
-					    <td colspan="2">http://api.myvinylcollection.com/albums/</td>
+					    <td colspan="2">http://api.myvinylcollection.com/records/</td>
 					    <td>DELETE the entire collection.</td>
 					  </tr>
 					  <tr>
-						<td colspan="2">http://api.myvinylcollection.com/albums/1</td>
+						<td colspan="2">http://api.myvinylcollection.com/records/1</td>
 					    <td>DELETE the addressed member of the collection.</td>
 					  </tr>
 					</table>
@@ -719,7 +720,7 @@ Date: Sat, 03 Dec 2016 11:07:22 GMT
                 <section>
                     <h2>DELETE on Collection</h2>
                     <pre><code>
-@app.route("/", methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route("/records", methods=['GET', 'POST', 'PUT', 'DELETE'])
 def get_records():
     if request.method == 'POST':
         record = Record(**json.loads(request.data))
@@ -741,7 +742,7 @@ def get_records():
                 <section>
                     <h2>DELETE on Resource</h2>
                     <pre><code>
-@app.route("/&lt;int:index&gt;", methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route("/records/&lt;int:index&gt;", methods=['GET', 'POST', 'PUT', 'DELETE'])
 def get_record(index):
     if request.method == 'POST':
         abort(405)
@@ -762,7 +763,7 @@ def get_record(index):
                 <section>
                     <h2>DELETE on Resource</h2>
                     <pre><code>
-$ curl -i -H "Content-Type: application/json" -X DELETE localhost:5000/91
+$ curl -i -X DELETE localhost:5000/records/91
 HTTP/1.0 200 OK
 Content-Type: application/json
 Content-Length: 104
@@ -782,7 +783,7 @@ Date: Sat, 03 Dec 2016 10:40:00 GMT
                 <section>
                     <h2>DELETE on Resource</h2>
                     <pre><code>
-$ curl -i -H "Content-Type: application/json" -X DELETE localhost:5000/91
+$ curl -i -X DELETE localhost:5000/records/91
 HTTP/1.0 HTTP/1.0 404 NOT FOUND
 Content-Type: application/json
 Content-Length: 50
@@ -799,7 +800,7 @@ Date: Sat, 03 Dec 2016 10:40:09 GMT
                 <section>
                     <h2>DELETE on Collection</h2>
                     <pre><code>
-$ curl -i -H "Content-Type: application/json" -X DELETE localhost:5000/
+$ curl -i -X DELETE localhost:5000/records
                     </code></pre>
                 </section>
 
@@ -818,9 +819,8 @@ $ curl -i -H "Content-Type: application/json" -X DELETE localhost:5000/
 from flask import Flask, jsonify, abort
 from flask_login import LoginManager, current_user
 
-login_manager = LoginManager()
 app = Flask(__name__)
-login_manager.init_app(app)
+login_manager = LoginManager(app)
 
 @login_manager.request_loader
 def check_token(request):
@@ -830,7 +830,7 @@ def check_token(request):
     return None
 
 @app.route("/")
-def get_records():
+def get_main_root():
     if current_user:
         return jsonify(data='Hello Login'), 200
     else:
@@ -870,7 +870,7 @@ Date: Sat, 03 Dec 2016 14:42:00 GMT
                 <section>
                     <h2>Securing our API - Resource</h2>
                     <pre><code>
-@app.route("/&lt;int:index&gt;", methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route("/records/&lt;int:index&gt;", methods=['GET', 'POST', 'PUT', 'DELETE'])
 def get_record(index):
     if request.method == 'POST':
         abort(405)
@@ -897,7 +897,7 @@ def get_record(index):
                 <section>
                     <h2>Securing our API - Collection</h2>
                     <pre><code>
-@app.route("/", methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route("/records", methods=['GET', 'POST', 'PUT', 'DELETE'])
 def get_records():
     if request.method == 'POST':
         record = Record(**json.loads(request.data))
