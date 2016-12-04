@@ -752,6 +752,9 @@ def get_record(index):
                 setattr(record, k, v)
             db.session.add(record)
             db.session.commit()
+		elif request.method == 'DELETE':
+            db.session.delete(record)
+            db.session.commit()
         return jsonify(record.as_dict()), 200
                     </code></pre>
                 </section>
@@ -885,7 +888,6 @@ def get_record(index):
              if current_user:
                 db.session.delete(record)
                 db.session.commit()
-                return jsonify(record), 200
              else:
                  abort(401)
         return jsonify(record.as_dict()), 200
