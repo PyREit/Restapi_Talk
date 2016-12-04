@@ -754,7 +754,7 @@ def get_record(index):
                 setattr(record, k, v)
             db.session.add(record)
             db.session.commit()
-		elif request.method == 'DELETE':
+        elif request.method == 'DELETE':
             db.session.delete(record)
             db.session.commit()
         return jsonify(record.as_dict()), 200
