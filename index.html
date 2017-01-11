@@ -322,7 +322,7 @@ def page_not_found(error):
     return jsonify(
         error="Not Found",
         status_code=404
-    ), 405
+    ), 404
 					</code></pre>
 					<pre class="fragment fade-in"><code data-trim contenteditable>
 $ curl -X GET localhost:5000/records/5
@@ -815,7 +815,7 @@ $ curl -i -X DELETE localhost:5000/records
                 </section>
 
                 <section>
-                    <h2>Username & Pwd authentication</h2>
+                    <h2>Pwd authentication</h2>
                     <pre><code>
 from flask import Flask, jsonify, abort
 from flask_login import LoginManager, current_user
@@ -827,7 +827,7 @@ login_manager = LoginManager(app)
 def check_token(request):
     token = request.headers.get('Authorization')
     if token == 'L3T_M3_PA55!':
-        return "ADMIN"
+        return "You_can_pass"  # DON'T TRY THIS AT HOME!
     return None
 
 @app.route("/")
